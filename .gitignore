@@ -1,0 +1,9 @@
+*.ini
+xxpy_download_ssrs.py
+pyodbc.md
+run.sh
+
+/report_exports/*
+/logs/*
+
+__pycache__/*
