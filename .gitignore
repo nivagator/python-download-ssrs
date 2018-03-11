@@ -2,6 +2,7 @@
 xxpy_download_ssrs.py
 pyodbc.md
 run.sh
+mail.py
 
 /report_exports/*
 /logs/*
