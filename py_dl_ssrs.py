@@ -1,5 +1,3 @@
-# https://www.reddit.com/r/Python/comments/67xak4/enterprise_intranet_authentication_and_ssrs/?st=JDZ961EE&sh=7bff6592
-
 import requests, os, datetime, configparser, pyodbc, logging
 from requests import Session
 from requests_ntlm import HttpNtlmAuth
@@ -23,7 +21,6 @@ def main():
     # create file handler
     if logger.handlers:
         logger.handlers = []
-    # handler = logging.FileHandler('ssrs_download.log')
     handler = logging.FileHandler(fn)
     handler.setLevel(logging.INFO)
 
@@ -55,7 +52,7 @@ def main():
     # PULL REPORT DATA FROM SQL SERVER
     cursor = cnxn.cursor()
     cursor.execute("""
-                    SELECT TOP 1
+                    SELECT
                         RPT_EXPRT_DIM_ID
                         ,[RPT_NM]
                         ,[RPT_FILE_NM] = RPT_FILE_NM 
@@ -76,13 +73,15 @@ def main():
     # EXPORT REPORTS
     for row in cursor:
         try:
-            get_rpt(row.RPT_EXPRT_FILE_TYP,row.RPT_SRVR_LOC_DESC,row.RPT_FILE_NM, filepath)
+            # get_rpt(row.RPT_EXPRT_FILE_TYP,row.RPT_SRVR_LOC_DESC,row.RPT_FILE_NM, filepath)
             rpt_pass.append([row.RPT_EXPRT_DIM_ID,row.RPT_NM])
             # print("Download complete: %r" % row.RPT_NM)
             # logger.info("Download complete: %r" % row.RPT_NM)
+            logger.info("\tSUCCESS! Report ID: {0} \t| Name: {1}".format(row.RPT_EXPRT_DIM_ID,row.RPT_NM))
         except:
             rpt_fail.append([row.RPT_EXPRT_DIM_ID,row.RPT_NM])
-            logger.warning("Download failed: %r" % row.RPT_NM)
+            # logger.warning("Download failed: %r" % row.RPT_NM)
+            logger.info("\tFAIL! Report ID: {0} \t| Name: {1}".format(row.RPT_EXPRT_DIM_ID,row.RPT_NM))
             # return False
     
     # LOG REPORT OUTPUT
@@ -92,15 +91,15 @@ def main():
 
     # pass reports
     logger.info("{0} of {1} reports downloaded successfully.".format(pass_rpts,total_rpts))
-    if pass_rpts > 0:
-        for rpt in rpt_pass:
-            logger.info("\tSUCCESS! Report ID: {0} \t| Name: {1}".format(rpt[0],rpt[1]))
+    # if pass_rpts > 0:
+        # for rpt in rpt_pass:
+            # logger.info("\tSUCCESS! Report ID: {0} \t| Name: {1}".format(rpt[0],rpt[1]))
 
     # fail reports
     logger.info("{0} of {1} reports failed to download.".format(fail_rpts,total_rpts))
-    if fail_rpts > 0:
-        for rpt in rpt_fail:
-            logger.info("\tFAIL! Report ID: {0} \t| Name: {1}".format(rpt[0],rpt[1]))
+    # if fail_rpts > 0:
+        # for rpt in rpt_fail:
+            # logger.info("\tFAIL! Report ID: {0} \t| Name: {1}".format(rpt[0],rpt[1]))
     
     logger.info("Downloads complete")
     cursor.close()
@@ -133,24 +132,29 @@ def main():
                     WHERE 1=1
                     AND A.ACTV_IND = 1
                     AND A.EXPIR_DT IS NULL
-                    AND B.USER_EMAIL = 'gavin@sineanalytics.com'
+                    
                     AND B.EXPIR_DT IS NULL
                     AND A.RPT_EXPRT_DIM_ID IN ( """ + rpt_ids + """)
-                    """)
+                    """) # AND B.USER_EMAIL = 'gavin@sineanalytics.com'
     logger.info("SQL email cursor executed")
     
     logger.info("Begin email routine")
     # Email REPORTS
     for row in cursor:
+        rptnm = 'Attached Report: ' + row.RPT_NM
+        body = """
+                <p>""" + row.RPT_NM + """ report is attached.</p>
+                <p>Please reply to this message with any questions.</p>
+                <p>Thank you,</p>
+                <p>Sine Analytics</p>
+               """
         try:
-            email(row.USER_EMAIL, row.RPT_NM, row.RPT_FILE_NM, filepath)
+            email(row.USER_EMAIL, rptnm, body, filename=row.RPT_FILE_NM, filepath=filepath,html="yes")
             email_pass.append([row.RPT_EXPRT_DIM_ID,row.RPT_NM,row.USER_EMAIL,row.RPT_EXPRT_EMAIL_DIM_ID])
-            # print("email sent: {0} tp {1}".format(row.RPT_NM,row.USER_EMAIL))
-            # logger.info("Download complete: %r" % row.RPT_NM)
+            logger.info("\tSENT! Email ID: {0} \t| Report: {1} \t| To: {2}".format(row.RPT_EXPRT_EMAIL_DIM_ID,row.RPT_NM,row.USER_EMAIL))            
         except:
             email_fail.append([row.RPT_EXPRT_DIM_ID,row.RPT_NM,row.USER_EMAIL,row.RPT_EXPRT_EMAIL_DIM_ID])
             logger.warning("email failed: {0} to {1} ".format(row.RPT_NM,row.USER_EMAIL))
-            print('send email except block ' + str(row.RPT_EXPRT_DIM_ID))
             return False
 
     # LOG EMAIL OUTPUT
@@ -160,15 +164,15 @@ def main():
     
     # pass emails
     logger.info("{0} of {1} emails were sent successfully.".format(pass_email,total_email))
-    if pass_email > 0:
-        for rpt in email_pass:
-            logger.info("\tSENT! Email ID: {0} \t| Report: {1} \t| To: {2}".format(rpt[3],rpt[1],rpt[2]))
+    # if pass_email > 0:
+    #     for rpt in email_pass:
+            # logger.info("\tSENT! Email ID: {0} \t| Report: {1} \t| To: {2}".format(rpt[3],rpt[1],rpt[2]))
 
     # fail emails
     logger.info("{0} of {1} emails failed to send.".format(fail_email,total_email))
-    if fail_email > 0:
-        for rpt in email_fail:
-            logger.info("\tFAILED TO SEND! Email ID: {0} \t| Report: {1} \t| To: {2}".format(rpt[3],rpt[1],rpt[2]))
+    # if fail_email > 0:
+    #     for rpt in email_fail:
+            # logger.info("\tFAILED TO SEND! Email ID: {0} \t| Report: {1} \t| To: {2}".format(rpt[3],rpt[1],rpt[2]))
     logger.info("emails complete")
     cursor.close()
     logger.info('Finished')
@@ -211,7 +215,5 @@ def get_rpt(file_format, report_loc, file_name, filepath):
 
     session.close()
     
-
-
 if __name__ == "__main__":
     main()
