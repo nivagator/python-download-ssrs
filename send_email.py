@@ -6,21 +6,18 @@ from email import encoders
 
 def email(toaddr, subject, body, **kwargs):
     config = configparser.ConfigParser()
-    config.read('email_creds.ini')
+    config.read('config.ini')
     from_email = config['gmail']['addr']
     pw = config['gmail']['pw']
     mailserver = config['gmail']['server']
     port = config['gmail']['port']
-    # py_file_path = os.path.dirname(os.path.realpath(__file__))
-    # dt_str = datetime.datetime.now().strftime("%Y_%m_%d_%H.%M.%S")
-    to_email = toaddr # 'gavingreer@mac.com'
+    to_email = toaddr 
 
     msg = MIMEMultipart()
     msg['From'] = from_email
     msg['To'] = to_email
-    msg['Subject'] = "Attached Report: " + subject 
+    msg['Subject'] = subject 
     
-    # body = 'This the email message ' + dt_str
     if 'html' in kwargs:
         msg.attach(MIMEText(body, 'html'))
     else:
@@ -53,8 +50,7 @@ def email(toaddr, subject, body, **kwargs):
         print('no attachment')
  
     # send the email
-    # server = smtplib.SMTP(mailserver, port)
-    server = smtplib.SMTP('smtp.gmail.com', 587)
+    server = smtplib.SMTP(mailserver, port)
     server.starttls()
     server.login(from_email, pw)
     text  = msg.as_string()
