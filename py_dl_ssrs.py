@@ -1,4 +1,4 @@
-import requests, os, datetime, configparser, pyodbc, logging
+import requests, os, datetime, configparser, pyodbc, logging, platform
 from requests import Session
 from requests_ntlm import HttpNtlmAuth
 from send_email import email
@@ -11,11 +11,17 @@ def main():
     server = config['sineserver']['server']
     db = config['sineserver']['database']
 
+    sys_type = platform.system()
     py_file_path = os.path.dirname(os.path.realpath(__file__))
-    filepath = py_file_path + '\\report_exports\\'
+    if sys_type == 'Windows':
+        filepath = py_file_path + '\\report_exports\\'
+        logpath = py_file_path + '\\logs\\'
+    else: 
+        filepath = py_file_path + '//report_exports//'
+        logpath = py_file_path + '//logs//'
     dt = datetime.datetime.now().strftime("%Y_%m_%d")
     logfile = 'ssrs_downloads_' + dt + '.log'
-    logpath = py_file_path + '\\logs\\'
+    
     fn =  logpath + logfile
 
     logger = logging.getLogger(__name__)

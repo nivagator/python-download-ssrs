@@ -1,4 +1,4 @@
-import smtplib, datetime, os, logging, configparser
+import smtplib, datetime, os, logging, configparser, platform
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -12,6 +12,7 @@ def email(toaddr, subject, body, **kwargs):
     mailserver = config['gmail']['server']
     port = config['gmail']['port']
     to_email = toaddr 
+    sys_type = platform.system()
 
     msg = MIMEMultipart()
     msg['From'] = from_email
@@ -28,7 +29,10 @@ def email(toaddr, subject, body, **kwargs):
         filename = kwargs.get('filename')
         filepath = kwargs.get('filepath')
         try:
-            attachment = open(filepath + '\\' + filename, 'rb')
+            if sys_type == 'Windows':
+                attachment = open(filepath + '\\' + filename, 'rb')
+            else:
+                attachment = open(filepath + '//' + filename, 'rb')
         except:
             logging.warning("file could not be opened")
             return False

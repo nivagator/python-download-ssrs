@@ -1,11 +1,14 @@
-*.ini
+
 xxpy_download_ssrs.py
 pyodbc.md
 run.sh
 mail.py
 test.py
+report_job.sh
+config.ini
 
 /report_exports/*
 /logs/*
 
 __pycache__/*
+
